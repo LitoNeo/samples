@@ -259,7 +259,7 @@ int main(int argc, char** argv){
     return 0;
 }
 ```
-注:在使用时,一般需要对pipe进行一定的封装,具体可以参考[xpipe代码]()
+注:在使用时,一般需要对pipe进行一定的封装,具体可以参考[xpipe代码](https://github.com/LitoNeo/samples/blob/master/CodeHub/System/process%E8%BF%9B%E7%A8%8B/C%2B%2B/unnamed_pipe/xpipe.cpp)
 
 ### 命名管道FIFO
 **与无名管道的不同之处**
@@ -285,8 +285,62 @@ open(const char* path, O_RDONLY | O_NONBLOCK);  // 只读，非阻塞
 open(const cahr* path, O_WRONLY);               // 只写，阻塞
 open(const char* path, O_WRONLY | O_NONBLOCK);  // 只写，非阻塞
 ```
+> 阻塞,(默认):`只读open`要阻塞到某个其他进程为写而打开此FIFO，`只写open`要阻塞到某个其他进程为读而打开它 --相当于两个人打电话,必须两个人都拿起话筒后才能通信,否则等待;
+> `O_NONBLOCK`非阻塞:`只读open`立即返回,`只写open`出错返回-1(当没有读端时);
 
+**[sample]()**
+此处我们使用C++的`fstream`进行实现.
+有名管道的实现分为以下4步:
+> 1. mkfifo()创建管道
+> 2. open()打开管道
+> 3. 进行管道的读写
+> 4. 关闭文件/管道
 
+writer.cpp
+```c++
+#include <unistd.h>
+#include <fstream>
+#include <sys/stat.h>  // mkfifo
+
+int main(int argc, char** argv){
+    if((mkfifo("fifo_1", 0666)) == -1){
+        printf("file exists\n");
+    };
+
+    std::fstream file;
+    file.open("fifo_1",std::ios::out);
+    for(int i=0;i<5;i++){
+        file << i << std::endl;
+        printf("writer send message %d\n", i);
+        sleep(1);
+    }
+    file.close()
+    return 0;
+}
+```
+
+reader.cpp
+```c++
+#include <fstream>
+#include <sys/stat.h>  // mkfifo
+#include <iostream>
+
+int main(int argc, char** argv){
+    if((mkfifo("fifo_1", 0666)) == -1){
+        printf("file exists\n");
+    };
+
+    std::fstream file;
+    file.open("fifo_1",std::ios::in);
+    for(int i=0;i<5;i++){
+        std::string data;
+        file >> data;
+        std::cout << "reader receive message " << data << std::endl;
+    }
+    file.close();
+    return 0;
+}
+```
 
 http://songlee24.github.io/2015/04/21/linux-IPC/
 
